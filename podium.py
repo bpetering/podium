@@ -18,9 +18,9 @@ TEMPLATES_DIR='templates'
 STATIC_DIR='static'
 BUILD_DIR='build'
 
-def read_meta(template_path):
+
+def read_meta(meta_path):
     ret = {}
-    meta_path = template_path + '.meta'
     if not os.path.exists(meta_path):
         raise Exception("tried to read meta that doesn't exist, path: {}".format(meta_path))
     with open(meta_path, 'r') as f:
@@ -64,7 +64,7 @@ def get_posts(reverse_order=True):
                     if f.endswith('.jinja')]
     posts_meta = {}
     for f in post_files:
-        posts_meta[f] = read_meta(f)
+        posts_meta[f] = read_meta(f + '.meta')
     post_files.sort(reverse=reverse_order)
     posts = [{
         'path': f, 
@@ -94,11 +94,14 @@ def copy_entries(src_dir, dst_dir):
 
 def zip_build():
     build_path = os.path.join(BASE, BUILD_DIR)
-    zipped_path = os.path.join(BASE, 'build_{}.zip'.format(date.today().isoformat()))
+    zipped_name = 'build_{}.zip'.format(date.today().isoformat())
+    zipped_path = os.path.join(BASE, zipped_name)
     with zipfile.ZipFile(zipped_path, 'w', compression=zipfile.ZIP_DEFLATED) as buildzip:
         for path in glob.glob(os.path.join(build_path, '**'), recursive=True):
-            arcname = path.replace(build_path + os.sep, '')
+            arcname = SITE_META['name'] + os.sep + path.replace(build_path + os.sep, '')
             buildzip.write(path, arcname)
+    # Move archive to within build/ directory
+    os.rename(zipped_path, os.path.join(build_path, zipped_name))
 
 def build():
     global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
@@ -128,7 +131,7 @@ def build():
         template = jinja_env.get_template(template_path)
         context_dict = {}
         context_dict['today'] = date.today()
-        context_dict['meta'] = read_meta(template_path)
+        context_dict['meta'] = read_meta(template_path + '.meta')
         context_dict['title'] = context_dict['meta'].get('title', '')
         if 'posts' in template_path:
             context_dict['date'] = get_date_from_path(template_path)
@@ -187,6 +190,10 @@ def run(action):
         clean()
 
 if __name__ == '__main__':
+    global SITE_META
+
+    SITE_META = read_meta(os.path.join(BASE, 'site.meta'))
+    
     if not os.path.exists(BASE):
         os.mkdir(BASE)
 
