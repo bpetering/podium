@@ -4,7 +4,6 @@ import os.path
 import shutil
 import glob
 import re
-import zipfile
 from datetime import date
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -92,16 +91,22 @@ def copy_entries(src_dir, dst_dir):
             print("- skipping copying {}, unsupported path type".format(full))
     print("+ copied {} files, and {} directories (recursively)".format(num_files, num_dirs))
 
-def zip_build():
+def archive_build(archive_type='zip'):
+    # Rename directory so it's clearer when downloaded and unpacked
     build_path = os.path.join(BASE, BUILD_DIR)
-    zipped_name = 'build_{}.zip'.format(date.today().isoformat())
-    zipped_path = os.path.join(BASE, zipped_name)
-    with zipfile.ZipFile(zipped_path, 'w', compression=zipfile.ZIP_DEFLATED) as buildzip:
-        for path in glob.glob(os.path.join(build_path, '**'), recursive=True):
-            arcname = SITE_META['name'] + os.sep + path.replace(build_path + os.sep, '')
-            buildzip.write(path, arcname)
+    arc_build_path = os.path.join(BASE, SITE_META['name'])
+
+    shutil.move(build_path, arc_build_path)
+    arc_name = '{}_{}'.format(SITE_META['name'], date.today().isoformat())
+    arc_path = os.path.join(BASE, arc_name)
+    shutil.make_archive(arc_path, archive_type, '.', SITE_META['name'])
+    shutil.move(arc_build_path, build_path)
+
     # Move archive to within build/ directory
-    os.rename(zipped_path, os.path.join(build_path, zipped_name))
+    ext = archive_type
+    if archive_type == 'gztar':
+        ext = 'tar.gz'
+    os.rename(arc_path + '.' + ext, os.path.join(build_path, arc_name + '.' + ext))
 
 def build():
     global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
@@ -146,7 +151,8 @@ def build():
         os.rename(template_path + '.ren', final_path)
         print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
 
-    zip_build()
+    archive_build('zip')
+    archive_build('gztar')
 
     os.chdir(old_cwd)
 
