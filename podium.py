@@ -4,6 +4,7 @@ import os.path
 import shutil
 import glob
 import re
+import zipfile
 from datetime import date
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -91,6 +92,14 @@ def copy_entries(src_dir, dst_dir):
             print("- skipping copying {}, unsupported path type".format(full))
     print("+ copied {} files, and {} directories (recursively)".format(num_files, num_dirs))
 
+def zip_build():
+    build_path = os.path.join(BASE, BUILD_DIR)
+    zipped_path = os.path.join(BASE, 'build_{}.zip'.format(date.today().isoformat()))
+    with zipfile.ZipFile(zipped_path, 'w', compression=zipfile.ZIP_DEFLATED) as buildzip:
+        for path in glob.glob(os.path.join(build_path, '**'), recursive=True):
+            arcname = path.replace(build_path + os.sep, '')
+            buildzip.write(path, arcname)
+
 def build():
     global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
 
@@ -134,6 +143,8 @@ def build():
         os.rename(template_path + '.ren', final_path)
         print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
 
+    zip_build()
+
     os.chdir(old_cwd)
 
 def view():
@@ -176,6 +187,9 @@ def run(action):
         clean()
 
 if __name__ == '__main__':
+    if not os.path.exists(BASE):
+        os.mkdir(BASE)
+
     for d in (PAGES_DIR, POSTS_DIR, STATIC_DIR, TEMPLATES_DIR):
         full = os.path.join(BASE, d)
         if not os.path.exists(full):
