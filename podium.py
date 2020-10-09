@@ -91,22 +91,27 @@ def copy_entries(src_dir, dst_dir):
             print("- skipping copying {}, unsupported path type".format(full))
     print("+ copied {} files, and {} directories (recursively)".format(num_files, num_dirs))
 
-def archive_build(archive_type='zip'):
+def build_compressed(archive_types=('zip', 'gztar')):
     # Rename directory so it's clearer when downloaded and unpacked
     build_path = os.path.join(BASE, BUILD_DIR)
-    arc_build_path = os.path.join(BASE, SITE_META['name'])
 
-    shutil.move(build_path, arc_build_path)
-    arc_name = '{}_{}'.format(SITE_META['name'], date.today().isoformat())
-    arc_path = os.path.join(BASE, arc_name)
-    shutil.make_archive(arc_path, archive_type, '.', SITE_META['name'])
-    shutil.move(arc_build_path, build_path)
+    # Use /tmp to hide username from .tar archive meta
+    arc_build_path = os.path.join('/tmp', SITE_META['name']) # TODO windows, TODO no site meta
+    shutil.rmtree(arc_build_path, ignore_errors=True)
+    shutil.copytree(build_path, arc_build_path)
 
-    # Move archive to within build/ directory
-    ext = archive_type
-    if archive_type == 'gztar':
-        ext = 'tar.gz'
-    os.rename(arc_path + '.' + ext, os.path.join(build_path, arc_name + '.' + ext))
+    for archive_type in archive_types:
+        arc_name = '{}_{}'.format(SITE_META['name'], date.today().isoformat())
+        arc_path = os.path.join('/tmp', arc_name)
+        shutil.make_archive(arc_path, archive_type, '/tmp', SITE_META['name'])   # TODO windows
+
+        # Move archive to within build/ directory
+        ext = archive_type
+        if archive_type == 'gztar':
+            ext = 'tar.gz'
+        os.rename(arc_path + '.' + ext, os.path.join(build_path, arc_name + '.' + ext))
+
+    shutil.rmtree(arc_build_path)
 
 def build():
     global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
@@ -151,8 +156,7 @@ def build():
         os.rename(template_path + '.ren', final_path)
         print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
 
-    archive_build('zip')
-    archive_build('gztar')
+    build_compressed(('zip', 'gztar'))
 
     os.chdir(old_cwd)
 
