@@ -43,7 +43,7 @@ def read_meta(meta_path):
     meta_lines = meta.replace('\r', '').split('\n')
     for line in meta_lines: 
         if len(line) and delim in line:
-            key, val = line.split(delim)
+            key, _, val = line.partition(delim)
             key = key.lower()
             key = re.sub(r'^\s+', '', key)
             key = re.sub(r'\s+$', '', key)
