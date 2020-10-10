@@ -6,9 +6,10 @@ An opinionated, useful static-site generator in Python. A less minimalistic, ful
 
 Features:
 * generates an entire site from templates
-* `build` action, to rebuild the site, `view`, to view site in local browser (with live-reload)
+* `build` action, to rebuild the site, `watch`, to view site in local browser (with live-reload)
 * tags and categories
 * automatic sitemap generation
+* generates archive of site to download
 * library of macros
 
 ## Do I use this or [soapbox](https://github.com/bpetering/soapbox)?
@@ -18,10 +19,25 @@ Probably this (`podium`). Soapbox is good if you *just need to get started*, and
 
 ## Usage
 
-If you're starting with a site built with `soapbox`, `mv ~/soapbox ~/podium`.
+### Installation
+
+```
+git clone https://github.com/bpetering/podium
+cd podium
+python -m venv venvpodium
+source venvpodium/bin/activate
+pip install -r requirements.txt
+```
+
+### Building a site
+
+If you're starting with a site built with `soapbox`, `mv ~/soapbox/* ~/podium/`.
 
 `python podium.py build` to build your site from templates
 
-`python podium.py view` to start a web server, to test locally (with live-reload!)
+`python podium.py clean` to remove the build
 
-Once you're happy, copy the `~/podium/build` directory contents to your domain's docroot.
+`python podium.py watch` to start a web server, to test locally (with live-reload!)
+
+Once you're happy, copy the `~/podium/build` directory contents to your domain's docroot (e.g. `rsync -v -a -e 'ssh' build/ you@yourserver:/var/www/example.com/`)
+
