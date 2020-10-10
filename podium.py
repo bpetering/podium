@@ -207,12 +207,11 @@ def clean():
     print("+ Removed {}".format(build_dir))
 
 def show_help():
-    print('Usage: podium.py [--build/--view/--clean]')
-    print('     build:      build site from templates (removes build directory contents)')
+    print('Usage: podium.py [clean/build/watch]')
+    print('     clean:      removes build directory (no build)')
+    print('     build:      build site from templates')
     print('     watch:      start a local webserver and browser to view the site, rebuilding when there are changes')
-    print('     clean:      removes build directory')
     sys.exit(1)
-
 
 def run(action):
     if action not in ('build', 'watch', 'clean'):
