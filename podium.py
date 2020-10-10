@@ -8,7 +8,7 @@ import re
 from datetime import date
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-import inotify.adapters
+import inotify.adapters     # TODO non-linux
 from jinja2 import Environment, FileSystemLoader
 
 BASE=os.path.expanduser('~/podium')
