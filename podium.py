@@ -1,12 +1,14 @@
 import sys
 import os
 import os.path
+import signal
 import shutil
 import glob
 import re
 from datetime import date
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
+import inotify.adapters
 from jinja2 import Environment, FileSystemLoader
 
 BASE=os.path.expanduser('~/podium')
@@ -160,17 +162,42 @@ def build():
 
     os.chdir(old_cwd)
 
-def view():
+def watch():
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
     if not os.path.exists(build_dir):
         build()
-    old_cwd = os.getcwd()
-    os.chdir(build_dir)
-    print("+ Serving on http://127.0.0.1:8000/")
-    httpd = HTTPServer(('127.0.0.1', 8000), SimpleHTTPRequestHandler)
-    httpd.serve_forever()
-    os.chdir(old_cwd)
+
+    print("+ Serving on http://127.0.0.1:8000/, Ctrl-C to exit")
+
+    # Fork, and start a web server in the child, and a filesystem watcher in the parent.
+    # If the site is modified, stop webserver, rebuild, and restart the webserver (it doesn't 
+    # like it when its cwd goes away)
+    ret = os.fork()
+    if ret == 0:
+        # Child
+        old_cwd = os.getcwd()
+        os.chdir(build_dir)
+        httpd = HTTPServer(('127.0.0.1', 8000), SimpleHTTPRequestHandler)
+        httpd.serve_forever()
+    else:
+        # Parent
+        i = inotify.adapters.InotifyTree(BASE)
+        for event in i.event_gen():
+            # We're only interested in create, delete, move, write events (not dir list)
+            # (and ignore tags files)
+            if event is None:
+                continue
+            (_, type_names, path, filename) = event
+            if filename in ('tags', 'tags.temp', 'tags.lock'):
+                continue
+            if filename.endswith('.swp') or filename.endswith('.swx'):
+                continue
+            if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
+            or type_names == ['IN_CREATE', 'IN_ISDIR']:
+                os.kill(ret, signal.SIGKILL)
+                build()
+                watch()
 
 def clean():
     global BASE, BUILD_DIR
@@ -181,20 +208,20 @@ def clean():
 def show_help():
     print('Usage: podium.py [--build/--view/--clean]')
     print('     build:      build site from templates (removes build directory contents)')
-    print('     view:       start a local webserver and browser to view the site')
+    print('     watch:      start a local webserver and browser to view the site, rebuilding when there are changes')
     print('     clean:      removes build directory')
     sys.exit(1)
 
 
 def run(action):
-    if action not in ('build', 'view', 'clean'):
+    if action not in ('build', 'watch', 'clean'):
         show_help()
             
     if action == 'build':
         build()
 
-    if action == 'view':
-        view()
+    if action == 'watch':
+        watch()
 
     if action == 'clean':
         clean()
