@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+
+        <title>{{ title }}</title>
+
+        {% block headextra %}
+        {% endblock %}
+    </head>
+
+    <body class="{% block bodyclass %}{% endblock %}">
+
+        <div class="content">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </body>
+</html>
+
+
