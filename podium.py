@@ -72,7 +72,8 @@ def get_posts(reverse_order=True):
         'meta': posts_meta[f],
         'url':  get_url_from_path(f),
         'date': get_date_from_path(f),
-        'title': posts_meta[f].get('title', '')
+        'title': posts_meta[f].get('title', ''),
+        'tags': posts_meta[f].get('tags', '')
     } for f in post_files]
     return posts
 
@@ -149,6 +150,7 @@ def build():
             context_dict['date'] = get_date_from_path(template_path)
         context_dict['posts'] = get_posts()
         context_dict['url'] = get_url_from_path(template_path)
+        context_dict['tags'] = context_dict['meta'].get('tags', '')
 
         with open(template_path + '.ren', 'w') as f:
             f.write(template.render(context_dict))
@@ -165,9 +167,8 @@ def build():
 def watch():
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
-    if not os.path.exists(build_dir):
-        build()
-
+    
+    build()
     print("+ Serving on http://127.0.0.1:8000/, Ctrl-C to exit")
 
     # Fork, and start a web server in the child, and a filesystem watcher in the parent.
