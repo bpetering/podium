@@ -208,37 +208,36 @@ def watch():
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
     
-    build()
-    print("+ Serving on http://127.0.0.1:8000/, Ctrl-C to exit")
+    while True:
+        build()
 
-    # Fork, and start a web server in the child, and a filesystem watcher in the parent.
-    # If the site is modified, stop webserver, rebuild, and restart the webserver (it doesn't 
-    # like it when its cwd goes away)
-    ret = os.fork()
-    if ret == 0:
-        # Child
-        old_cwd = os.getcwd()
-        os.chdir(build_dir)
-        httpd = HTTPServer(('127.0.0.1', 8000), SimpleHTTPRequestHandler)
-        httpd.serve_forever()
-    else:
-        # Parent
-        i = inotify.adapters.InotifyTree(BASE)
-        for event in i.event_gen():
-            # We're only interested in create, delete, move, write events (not dir list)
-            # (and ignore tags files)
-            if event is None:
-                continue
-            (_, type_names, path, filename) = event
-            if filename in ('tags', 'tags.temp', 'tags.lock'):
-                continue
-            if filename.endswith('.swp') or filename.endswith('.swx'):
-                continue
-            if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
-            or type_names == ['IN_CREATE', 'IN_ISDIR']:
-                os.kill(ret, signal.SIGKILL)
-                build()
-                watch()
+        # Fork, and start a web server in the child, and a filesystem watcher in the parent.
+        # If the site is modified, stop webserver, rebuild, and restart the webserver (it doesn't 
+        # like it when its cwd goes away)
+        ret = os.fork()
+        if ret == 0:
+            # Child
+            os.chdir(build_dir)
+            httpd = HTTPServer(('127.0.0.1', 8000), SimpleHTTPRequestHandler)
+            httpd.serve_forever()
+        else:
+            # Parent
+            print("Serving on http://127.0.0.1:8000/, Ctrl-C to stop")
+            i = inotify.adapters.InotifyTree(BASE)
+            for event in i.event_gen():
+                # We're only interested in create, delete, move, write events (not dir list)
+                # (and ignore tags files)
+                if event is None:
+                    continue
+                (_, type_names, path, filename) = event
+                if filename in ('tags', 'tags.temp', 'tags.lock'):
+                    continue
+                if filename.endswith('.swp') or filename.endswith('.swx'):
+                    continue
+                if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
+                or type_names == ['IN_CREATE', 'IN_ISDIR']:
+                    os.kill(ret, signal.SIGKILL)
+                    break
 
 def clean():
     global BASE, BUILD_DIR
