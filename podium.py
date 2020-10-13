@@ -137,7 +137,7 @@ def build():
 
     # find all jinja files in build and render 
     jinja_env = Environment(
-            loader=FileSystemLoader(os.path.join(BASE, TEMPLATES_DIR))
+            loader=FileSystemLoader([BASE, os.path.join(BASE, TEMPLATES_DIR)])
     )
     old_cwd = os.getcwd()
     os.chdir(BASE)
