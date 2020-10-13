@@ -108,7 +108,7 @@ def get_tags_with_posts():
     return tags
 
 
-def copy_entries(src_dir, dst_dir):
+def copy_entries(src_dir, dst_dir, quiet=False):
     """Copy files, and copy directories recursively, from src_dir to dst_dir"""
     entries = os.listdir(src_dir)
     num_files = 0
@@ -122,8 +122,10 @@ def copy_entries(src_dir, dst_dir):
             shutil.copytree(full, os.path.join(dst_dir, f))
             num_dirs += 1
         else:
-            print("- skipping copying {}, unsupported path type".format(full))
-    print("+ copied {} files, and {} directories (recursively)".format(num_files, num_dirs))
+            if not quiet:
+                print("- skipping copying {}, unsupported path type".format(full))
+    if not quiet:
+        print("+ copied {} files, and {} directories (recursively)".format(num_files, num_dirs))
 
 def build_compressed(archive_types=('zip', 'gztar')):
     # Rename directory so it's clearer when downloaded and unpacked
@@ -147,22 +149,25 @@ def build_compressed(archive_types=('zip', 'gztar')):
 
     shutil.rmtree(arc_build_path)
 
-def build():
+def build(quiet=False):
     global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
 
-    clean()
+    clean(quiet=quiet)
 
     # copy static/* dirs to build/
-    print("+ Copying static...")
-    copy_entries(os.path.join(BASE, STATIC_DIR), os.path.join(BASE, BUILD_DIR))
+    if not quiet:
+        print("+ Copying static...")
+    copy_entries(os.path.join(BASE, STATIC_DIR), os.path.join(BASE, BUILD_DIR), quiet=quiet)
 
     # copy posts/* (files and dirs) to build/posts/
-    print("+ Copying posts...")
-    copy_entries(os.path.join(BASE, POSTS_DIR), os.path.join(BASE, BUILD_DIR, 'posts'))
+    if not quiet:
+        print("+ Copying posts...")
+    copy_entries(os.path.join(BASE, POSTS_DIR), os.path.join(BASE, BUILD_DIR, 'posts'), quiet=quiet)
 
     # copy pages/* (files and dirs) to build/
-    print("+ Copying pages...")
-    copy_entries(os.path.join(BASE, PAGES_DIR), os.path.join(BASE, BUILD_DIR))
+    if not quiet:
+        print("+ Copying pages...")
+    copy_entries(os.path.join(BASE, PAGES_DIR), os.path.join(BASE, BUILD_DIR), quiet=quiet)
 
     # find all jinja files in build and render 
     jinja_env = Environment(
@@ -198,7 +203,8 @@ def build():
         final_path = template_path.replace('.jinja', '')
         os.remove(template_path)
         os.rename(template_path + '.ren', final_path)
-        print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
+        if not quiet:
+            print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
 
     build_compressed(('zip', 'gztar'))
 
@@ -209,7 +215,8 @@ def watch():
     build_dir = os.path.join(BASE, BUILD_DIR)
     
     while True:
-        build()
+        build(quiet=True)
+        print("+ rebuilt")
 
         # Fork, and start a web server in the child, and a filesystem watcher in the parent.
         # If the site is modified, stop webserver, rebuild, and restart the webserver (it doesn't 
@@ -222,7 +229,7 @@ def watch():
             httpd.serve_forever()
         else:
             # Parent
-            print("Serving on http://127.0.0.1:8000/, Ctrl-C to stop")
+            print("+ Serving on http://127.0.0.1:8000/, Ctrl-C to stop\n")
             i = inotify.adapters.InotifyTree(BASE)
             for event in i.event_gen():
                 # We're only interested in create, delete, move, write events (not dir list)
@@ -237,13 +244,15 @@ def watch():
                 if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
                 or type_names == ['IN_CREATE', 'IN_ISDIR']:
                     os.kill(ret, signal.SIGKILL)
+                    print("+ [{}/{}] changed, rebuilding...".format(path, filename))
                     break
 
-def clean():
+def clean(quiet=False):
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
     shutil.rmtree(build_dir, ignore_errors=True)
-    print("+ Removed {}".format(build_dir))
+    if not quiet:
+        print("+ Removed {}".format(build_dir))
 
 def show_help():
     print('Usage: podium.py [clean/build/watch]')
