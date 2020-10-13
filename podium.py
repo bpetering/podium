@@ -55,7 +55,7 @@ def read_meta(meta_path):
             val = re.sub(r'^\s+', '', val)
             val = re.sub(r'\s+$', '', val)
             if key == 'tags':
-                ret[key] = [x.strip() for x in val.split(',') if x != ',']
+                ret[key] = [x.lower().strip() for x in val.split(',') if x != ',']
             else:
                 ret[key] = val
     return ret
@@ -65,7 +65,7 @@ def get_url_from_path(path):
     return path.replace(BASE, '').replace('build', '').replace('.jinja', '')
 
 def get_date_from_path(post_path):
-    return re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-')
+    return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
 
 def get_post_files():
     global BASE, POSTS_DIR
@@ -83,7 +83,7 @@ def get_posts(reverse_order=True):
         'path': f, 
         'meta': posts_meta[f],
         'url':  get_url_from_path(f),
-        'date': get_date_from_path(f),
+        'date': get_date_from_path(f).isoformat(),
         'title': posts_meta[f].get('title', ''),
         'tags': posts_meta[f].get('tags', '')
     } for f in post_files]
@@ -104,7 +104,7 @@ def get_tags_with_posts():
                 tags[meta_tag]['posts'] = []
             url = file_path.replace('.jinja', '')
             tags[meta_tag]['posts'].append({
-                'date': get_date_from_path(file_path), 
+                'date': get_date_from_path(file_path).strftime('%d %b %Y'), 
                 'url':  url,
                 'title': meta['title']
             })
@@ -189,6 +189,8 @@ def build(quiet=False):
                         if f.endswith('.jinja')]
     site_posts = get_posts()
     site_tags_with_posts = get_tags_with_posts()
+    import pprint
+    pprint.pprint(site_tags_with_posts)
 
     for template_path in build_templates:
         template = jinja_env.get_template(template_path)
@@ -197,7 +199,7 @@ def build(quiet=False):
         context_dict['meta'] = read_meta(template_path + '.meta')
         context_dict['title'] = context_dict['meta'].get('title', '')
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
-            context_dict['date'] = get_date_from_path(template_path)
+            context_dict['date'] = get_date_from_path(template_path).strftime('%d %b %Y')
         context_dict['url'] = get_url_from_path(template_path)
         context_dict['tags'] = context_dict['meta'].get('tags', '')
 
