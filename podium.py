@@ -51,7 +51,10 @@ def read_meta(meta_path):
             key = re.sub(r'\s+$', '', key)
             val = re.sub(r'^\s+', '', val)
             val = re.sub(r'\s+$', '', val)
-            ret[key] = val
+            if key == 'tags':
+                ret[key] = [x.strip() for x in val.split(',') if x != ',']
+            else:
+                ret[key] = val
     return ret
 
 def get_url_from_path(path):
@@ -61,11 +64,15 @@ def get_url_from_path(path):
 def get_date_from_path(post_path):
     return re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-')
 
-def get_posts(reverse_order=True):
+def get_post_files():
     global BASE, POSTS_DIR
     post_files = [f for f in glob.glob(os.path.join(BASE, POSTS_DIR, '**'), recursive=True) 
                     if f.endswith('.jinja')]
+    return post_files
+
+def get_posts(reverse_order=True):
     posts_meta = {}
+    post_files = get_post_files()
     for f in post_files:
         posts_meta[f] = read_meta(f + '.meta')
     post_files.sort(reverse=reverse_order)
@@ -78,6 +85,28 @@ def get_posts(reverse_order=True):
         'tags': posts_meta[f].get('tags', '')
     } for f in post_files]
     return posts
+
+def get_tags_with_posts():
+    post_files = get_post_files()
+    all_metas = [(x, read_meta(x + '.meta')) for x in post_files]    
+    tags = {}
+    for item in all_metas:
+        file_path, meta = item
+        if 'tags' not in meta:
+            continue
+        for meta_tag in meta['tags']:
+            if meta_tag not in tags:
+                tags[meta_tag] = {}
+                tags[meta_tag]['name'] = meta_tag
+                tags[meta_tag]['posts'] = []
+            url = file_path.replace('.jinja', '')
+            tags[meta_tag]['posts'].append({
+                'date': get_date_from_path(file_path), 
+                'url':  url,
+                'title': meta['title']
+            })
+    return tags
+
 
 def copy_entries(src_dir, dst_dir):
     """Copy files, and copy directories recursively, from src_dir to dst_dir"""
@@ -141,18 +170,27 @@ def build():
     )
     old_cwd = os.getcwd()
     os.chdir(BASE)
-    build_templates = [f for f in glob.glob('build/**', recursive=True) if f.endswith('.jinja')]
+    build_templates = [f for f in 
+                        glob.glob(os.path.join(BUILD_DIR, '**'), recursive=True) 
+                        if f.endswith('.jinja')]
+    site_posts = get_posts()
+    site_tags_with_posts = get_tags_with_posts()
+
     for template_path in build_templates:
         template = jinja_env.get_template(template_path)
         context_dict = {}
         context_dict['today'] = date.today()
         context_dict['meta'] = read_meta(template_path + '.meta')
         context_dict['title'] = context_dict['meta'].get('title', '')
-        if 'posts' in template_path:
+        if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
             context_dict['date'] = get_date_from_path(template_path)
-        context_dict['posts'] = get_posts()
         context_dict['url'] = get_url_from_path(template_path)
         context_dict['tags'] = context_dict['meta'].get('tags', '')
+
+        # Provide all posts in site and all tags in site via .site
+        context_dict['site'] = {}
+        context_dict['site']['posts'] = site_posts
+        context_dict['site']['tags'] = site_tags_with_posts
 
         with open(template_path + '.ren', 'w') as f:
             f.write(template.render(context_dict))
