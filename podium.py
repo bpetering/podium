@@ -21,6 +21,9 @@ TEMPLATES_DIR='templates'
 STATIC_DIR='static'
 BUILD_DIR='build'
 
+IGNORE_FILENAMES=('tags', 'tags.temp', 'tags.lock')
+IGNORE_EXTS=('.swp', '.swx')
+
 
 def read_meta(meta_path):
     ret = {}
@@ -114,6 +117,12 @@ def copy_entries(src_dir, dst_dir, quiet=False):
     num_files = 0
     num_dirs = 0
     for f in entries:
+        if f in IGNORE_FILENAMES:
+            continue
+        if f[f.rfind('.'):] in IGNORE_EXTS:
+            continue
+        if f.endswith('~'):
+            continue
         full = os.path.join(src_dir, f)
         if os.path.isfile(full):
             shutil.copy(full, os.path.join(dst_dir, f))
@@ -237,9 +246,12 @@ def watch():
                 if event is None:
                     continue
                 (_, type_names, path, filename) = event
-                if filename in ('tags', 'tags.temp', 'tags.lock'):
+                if filename in IGNORE_FILENAMES:
                     continue
-                if filename.endswith('.swp') or filename.endswith('.swx') or filename.endswith('~'):
+                if '.' in filename:
+                    if filename[filename.rfind('.'):] in IGNORE_EXTS: 
+                        continue
+                if filename.endswith('~'):
                     continue
                 if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
                 or type_names == ['IN_CREATE', 'IN_ISDIR']:
