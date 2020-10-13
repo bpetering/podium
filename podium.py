@@ -11,6 +11,8 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import inotify.adapters     # TODO non-linux
 from jinja2 import Environment, FileSystemLoader
 
+# TODO live reload browser with xdotool
+
 BASE=os.path.expanduser('~/podium')
 
 PAGES_DIR='pages'

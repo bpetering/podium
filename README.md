@@ -37,7 +37,7 @@ If you're starting with a site built with `soapbox`, `mv ~/soapbox/* ~/podium/`.
 
 `python podium.py clean` to remove the build
 
-`python podium.py watch` to start a web server, to test locally (with live-reload!)
+`python podium.py watch` to start a web server, rebuilding if site changes, with live-reload
 
-Once you're happy, copy the `~/podium/build` directory contents to your domain's docroot (e.g. `rsync -v -a -e 'ssh' build/ you@yourserver:/var/www/example.com/`)
+Once you're happy, copy the `~/podium/build` directory contents to your domain's docroot (e.g. `rsync -v -a -e 'ssh' build/ you@yourserver:/var/www/example.org/`)
 
