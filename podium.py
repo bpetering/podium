@@ -62,7 +62,7 @@ def read_meta(meta_path):
 
 def get_url_from_path(path):
     global BASE
-    return path.replace(BASE, '').replace('build', '').replace('.jinja', '')
+    return path.replace(BASE, '').replace('build' + os.sep, '').replace('.jinja', '')
 
 def get_date_from_path(post_path):
     return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
@@ -102,10 +102,9 @@ def get_tags_with_posts():
                 tags[meta_tag] = {}
                 tags[meta_tag]['name'] = meta_tag
                 tags[meta_tag]['posts'] = []
-            url = file_path.replace('.jinja', '')
             tags[meta_tag]['posts'].append({
                 'date': get_date_from_path(file_path).strftime('%d %b %Y'), 
-                'url':  url,
+                'url':  get_url_from_path(file_path),
                 'title': meta['title']
             })
     return tags
