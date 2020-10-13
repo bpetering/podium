@@ -239,7 +239,7 @@ def watch():
                 (_, type_names, path, filename) = event
                 if filename in ('tags', 'tags.temp', 'tags.lock'):
                     continue
-                if filename.endswith('.swp') or filename.endswith('.swx'):
+                if filename.endswith('.swp') or filename.endswith('.swx') or filename.endswith('~'):
                     continue
                 if 'IN_CLOSE_WRITE' in type_names or 'IN_DELETE' in type_names or 'IN_MOVED_TO' in type_names \
                 or type_names == ['IN_CREATE', 'IN_ISDIR']:
