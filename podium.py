@@ -189,8 +189,6 @@ def build(quiet=False):
                         if f.endswith('.jinja')]
     site_posts = get_posts()
     site_tags_with_posts = get_tags_with_posts()
-    import pprint
-    pprint.pprint(site_tags_with_posts)
 
     for template_path in build_templates:
         template = jinja_env.get_template(template_path)
