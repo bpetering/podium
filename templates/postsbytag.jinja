@@ -1,0 +1,14 @@
+{% for tag in site.tags|sort(attribute="name") %}
+    <h2>{{ site.tags[tag].name }}</h2>
+
+    {% for post in site.tags[tag].posts|sort(attribute="date") %}
+        <article class="post">
+            <p class="post-date">{{ post.date }}</p>
+            <p class="post-link">
+                <a href="{{ post.url }}">{{ post.title }}</a>
+            </p>
+        </article>
+    {% endfor %}
+
+{% endfor %}
+
