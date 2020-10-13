@@ -24,7 +24,6 @@ BUILD_DIR='build'
 IGNORE_FILENAMES=('tags', 'tags.temp', 'tags.lock')
 IGNORE_EXTS=('.swp', '.swx')
 
-
 def read_meta(meta_path):
     ret = {}
     if not os.path.exists(meta_path):
@@ -62,7 +61,10 @@ def read_meta(meta_path):
 
 def get_url_from_path(path):
     global BASE
-    return path.replace(BASE, '').replace('build' + os.sep, '').replace('.jinja', '')
+    tmp = path.replace(BASE, '').replace('build' + os.sep, '').replace('.jinja', '')
+    if not tmp.startswith('/'):
+        tmp = '/' + tmp
+    return tmp
 
 def get_date_from_path(post_path):
     return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
@@ -78,6 +80,8 @@ def get_posts(reverse_order=True):
     post_files = get_post_files()
     for f in post_files:
         posts_meta[f] = read_meta(f + '.meta')
+    # Alphabetic sort, that works first with dates, because of dir structure, second 
+    # alphabetically within that date
     post_files.sort(reverse=reverse_order)
     posts = [{
         'path': f, 
@@ -195,10 +199,25 @@ def build(quiet=False):
         context_dict['today'] = date.today()
         context_dict['meta'] = read_meta(template_path + '.meta')
         context_dict['title'] = context_dict['meta'].get('title', '')
+        url = get_url_from_path(template_path)
+        context_dict['url'] = url
+        context_dict['tags'] = context_dict['meta'].get('tags', '')
+
+        # Posts only
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
             context_dict['date'] = get_date_from_path(template_path).strftime('%d %b %Y')
-        context_dict['url'] = get_url_from_path(template_path)
-        context_dict['tags'] = context_dict['meta'].get('tags', '')
+            # Find prev and next posts
+            tmpl_post_idx = [x['url'] for x in site_posts].index(url)
+            if tmpl_post_idx < len(site_posts) - 1:
+                context_dict['prev'] = {
+                    'title': site_posts[tmpl_post_idx + 1]['title'],    # reverse sorted, +1 is earlier
+                    'url':   site_posts[tmpl_post_idx + 1]['url']
+                }
+            if tmpl_post_idx > 0:
+                context_dict['next'] = {
+                    'title': site_posts[tmpl_post_idx - 1]['title'],
+                    'url':   site_posts[tmpl_post_idx - 1]['url']
+                }
 
         # Provide all posts in site and all tags in site via .site
         context_dict['site'] = {}
