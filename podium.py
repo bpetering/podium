@@ -60,7 +60,7 @@ def read_meta(meta_path):
                 ret[key] = val
     return ret
 
-def urlfriendly(s):
+def url_friendly(s):
     return re.sub(r'\W', '', s)
 
 def get_url_from_path(path):
