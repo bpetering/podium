@@ -60,6 +60,9 @@ def read_meta(meta_path):
                 ret[key] = val
     return ret
 
+def urlfriendly(s):
+    return re.sub(r'\W', '', s)
+
 def get_url_from_path(path):
     global BASE
     tmp = path.replace(BASE, '').replace('build' + os.sep, '').replace('.jinja', '')
@@ -189,11 +192,12 @@ def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
     os.mkdir(tags_dir)
 
     for tag in site_tags_with_posts: 
-        specific_tag_template_path = os.path.join(tags_dir, '{}.html.jinja'.format(re.sub(r'\W', '', tag)))
+        specific_tag_template_path = os.path.join(tags_dir, '{}.html.jinja'.format(url_friendly(tag)))
         shutil.copy2(tag_template_path, specific_tag_template_path)
         context_dict = {
             'title': 'Posts with tag "' + tag + '"',
             'tag': tag,
+            'friendly_tag': url_friendly(tag),
             'site': {
                 'posts': site_posts,
                 'tags': site_tags_with_posts
