@@ -20,6 +20,7 @@ POSTS_DIR='posts'
 TEMPLATES_DIR='templates'
 STATIC_DIR='static'
 BUILD_DIR='build'
+BUILD_TAGS_DIR='tags'
 
 IGNORE_FILENAMES=('tags', 'tags.temp', 'tags.lock')
 IGNORE_EXTS=('.swp', '.swx')
@@ -113,7 +114,6 @@ def get_tags_with_posts():
             })
     return tags
 
-
 def copy_entries(src_dir, dst_dir, quiet=False):
     """Copy files, and copy directories recursively, from src_dir to dst_dir"""
     entries = os.listdir(src_dir)
@@ -161,10 +161,60 @@ def build_compressed(archive_types=('zip', 'gztar')):
 
     shutil.rmtree(arc_build_path)
 
-def build(quiet=False):
-    global BASE, PAGES_DIR, POSTS_DIR, TEMPLATES_DIR, STATIC_DIR, BUILD_DIR
+def template_render_and_rename(template_path, context_dict, quiet=False):
+    jinja_env = Environment(
+            loader=FileSystemLoader([BASE, os.path.join(BASE, TEMPLATES_DIR)])
+    )
+    template = jinja_env.get_template(template_path)
 
+    # Ensure certain things are always in context dict
+    if 'today' not in context_dict:
+        context_dict['today'] = date.today()
+    if 'url' not in context_dict:
+        context_dict['url'] = get_url_from_path(template_path)
+
+    with open(template_path + '.ren', 'w') as f:
+        f.write(template.render(context_dict))
+
+    final_path = template_path.replace('.jinja', '')
+    os.remove(template_path)
+    os.rename(template_path + '.ren', final_path)
+    if not quiet:
+        print("++ Rendered {}{}".format(final_path, ' including meta' if 'meta' in context_dict else ''))
+
+def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
+    # Individual tags pages
+    tag_template_path = os.path.join('templates', 'tag.jinja')
+    tags_dir = os.path.join(BUILD_DIR, BUILD_TAGS_DIR)
+    os.mkdir(tags_dir)
+
+    for tag in site_tags_with_posts: 
+        specific_tag_template_path = os.path.join(tags_dir, '{}.html.jinja'.format(re.sub(r'\W', '', tag)))
+        shutil.copy2(tag_template_path, specific_tag_template_path)
+        context_dict = {
+            'title': 'Posts with tag "' + tag + '"',
+            'tag': tag,
+            'site': {
+                'posts': site_posts,
+                'tags': site_tags_with_posts
+            }
+        }
+        template_render_and_rename(specific_tag_template_path, context_dict, quiet=quiet)
+
+    # All posts by tag
+    all_posts_template_path = os.path.join('templates', 'postsbytag.jinja')
+    build_all_posts_template_path = os.path.join(BUILD_DIR, 'postsbytag.html.jinja')
+    shutil.copy2(all_posts_template_path, build_all_posts_template_path)
+    del context_dict['tag']
+    context_dict['title'] = 'Posts by Tag'
+    template_render_and_rename(build_all_posts_template_path, context_dict, quiet=quiet)
+
+def build(quiet=False):
     clean(quiet=quiet)
+
+    # Implications for URL structure:
+    # - posts are by-date (3 directory levels) under /posts/<date>/name.html
+    # - pages are /<pagename>.html, unless in a subdir in pages/
 
     # copy static/* dirs to build/
     if not quiet:
@@ -181,22 +231,17 @@ def build(quiet=False):
         print("+ Copying pages...")
     copy_entries(os.path.join(BASE, PAGES_DIR), os.path.join(BASE, BUILD_DIR), quiet=quiet)
 
-    # find all jinja files in build and render 
-    jinja_env = Environment(
-            loader=FileSystemLoader([BASE, os.path.join(BASE, TEMPLATES_DIR)])
-    )
     old_cwd = os.getcwd()
     os.chdir(BASE)
     build_templates = [f for f in 
                         glob.glob(os.path.join(BUILD_DIR, '**'), recursive=True) 
                         if f.endswith('.jinja')]
+    # Run these expensive functions only once
     site_posts = get_posts()
     site_tags_with_posts = get_tags_with_posts()
 
     for template_path in build_templates:
-        template = jinja_env.get_template(template_path)
         context_dict = {}
-        context_dict['today'] = date.today()
         context_dict['meta'] = read_meta(template_path + '.meta')
         context_dict['title'] = context_dict['meta'].get('title', '')
         url = get_url_from_path(template_path)
@@ -224,15 +269,9 @@ def build(quiet=False):
         context_dict['site']['posts'] = site_posts
         context_dict['site']['tags'] = site_tags_with_posts
 
-        with open(template_path + '.ren', 'w') as f:
-            f.write(template.render(context_dict))
+        template_render_and_rename(template_path, context_dict, quiet=quiet)
 
-        final_path = template_path.replace('.jinja', '')
-        os.remove(template_path)
-        os.rename(template_path + '.ren', final_path)
-        if not quiet:
-            print("++ Rendered {}{}".format(final_path, ' including meta' if context_dict['meta'] else ''))
-
+    build_tag_pages(site_posts, site_tags_with_posts, quiet=quiet)
     build_compressed(('zip', 'gztar'))
 
     os.chdir(old_cwd)
