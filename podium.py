@@ -5,6 +5,7 @@ import signal
 import shutil
 import glob
 import re
+import time
 from datetime import date
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -318,6 +319,7 @@ def watch():
                 or type_names == ['IN_CREATE', 'IN_ISDIR']:
                     os.kill(ret, signal.SIGKILL)
                     print("+ [{}/{}] changed, rebuilding...".format(path, filename))
+                    time.sleep(1)
                     break
 
 def clean(quiet=False):
