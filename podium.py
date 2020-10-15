@@ -111,6 +111,7 @@ def get_tags_with_posts():
                 tags[meta_tag] = {}
                 tags[meta_tag]['name'] = meta_tag
                 tags[meta_tag]['posts'] = []
+                tags[meta_tag]['friendly'] = url_friendly(meta_tag)
             tags[meta_tag]['posts'].append({
                 'date': get_date_from_path(file_path).strftime('%d %b %Y'), 
                 'url':  get_url_from_path(file_path),
@@ -246,12 +247,13 @@ def build(quiet=False):
     site_tags_with_posts = get_tags_with_posts()
 
     for template_path in build_templates:
-        context_dict = {}
-        context_dict['meta'] = read_meta(template_path + '.meta')
-        context_dict['title'] = context_dict['meta'].get('title', '')
+        context_dict = read_meta(template_path + '.meta')
         url = get_url_from_path(template_path)
         context_dict['url'] = url
-        context_dict['tags'] = context_dict['meta'].get('tags', '')
+        context_dict['tags'] = [{
+            'name': x,
+            'friendly': url_friendly(x)
+        } for x in context_dict.get('tags', [])]
 
         # Posts only
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
