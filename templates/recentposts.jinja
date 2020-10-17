@@ -1,9 +1,10 @@
 <ul class="recent-posts">
     {% for post in site.posts[:5] %}
     <li>
-        <article class="post">
-            <a href="{{ post.url }}">{{ post.title }}</a>
-            <span class="when-posted">{{ post.date }}</a>
+        <article class="post-article">
+            <a class="post-link" href="{{ post.url }}">{{ post.title }}</a>
+            <br>
+            <span class="post-date">{{ post.date }}</a>
         </article>
     </li>
 {% endfor %}

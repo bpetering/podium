@@ -6,16 +6,39 @@
 
         <title>{{ title }}</title>
 
+        {% if description %}
+            <meta name="description" content="{{ description }}">
+        {% endif %}
+
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link rel="stylesheet" href="/css/styles.css" type="text/css">
+
         {% block headextra %}
         {% endblock %}
     </head>
 
     <body class="{% block bodyclass %}{% endblock %}">
 
-        <div class="content">
-            {% block content %}
-            {% endblock %}
+        <div class="wrapper">
+            <div class="content-wrapper primary">
+                {% block bar %}
+                {% endblock %}
+
+                <div class="content">
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </div>
         </div>
+
+        <div class="wrapper">
+            <div class="content-wrapper footer">
+            </div>
+        </div>
+
+        {% block footerscripts %}
+        {% endblock %}
 
     </body>
 </html>

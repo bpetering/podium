@@ -1,2 +1,18 @@
 {% extends 'base.jinja' %}
 
+{% block bodyclass %}post{% endblock %}
+
+{% block content %}
+    
+<h1>{{ title }}</h1>
+
+<div class="post-meta">
+    <p class="post-date">{{ date }}</p>
+
+    <p class="post-tags">{% for tag in tags %}
+        <a class="post-tag" href="/tags/{{ tag.friendly }}.html">{{ tag.name }}</a>
+    {% endfor %}</p>
+</div>
+
+{% endblock %}
+
