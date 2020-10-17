@@ -78,7 +78,7 @@ def format_date_html(date_obj):
     d = date_obj.strftime('%d')
     if d[-1] == '1':
         suffix = 'st'
-    elif d[-1] == '2':
+    elif d[-1] == '2' and d != '12':
         suffix = 'nd'
     elif d[-1] == '3' and d != '13':
         suffix = 'rd'
