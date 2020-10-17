@@ -74,6 +74,18 @@ def get_url_from_path(path):
 def get_date_from_path(post_path):
     return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
 
+def format_date_html(date_obj):
+    d = date_obj.strftime('%d')
+    if d[-1] == '1':
+        suffix = 'st'
+    elif d[-1] == '2':
+        suffix = 'nd'
+    elif d[-1] == '3' and d != '13':
+        suffix = 'rd'
+    else:
+        suffix = 'th'
+    return '{}<sup>{}</sup> {}'.format(d, suffix, date_obj.strftime('%B %Y'))
+
 def get_post_files():
     global BASE, POSTS_DIR
     post_files = [f for f in glob.glob(os.path.join(BASE, POSTS_DIR, '**'), recursive=True) 
@@ -92,7 +104,7 @@ def get_posts(reverse_order=True):
         'path': f, 
         'meta': posts_meta[f],
         'url':  get_url_from_path(f),
-        'date': get_date_from_path(f).isoformat(),
+        'date': format_date_html(get_date_from_path(f)),
         'title': posts_meta[f].get('title', ''),
         'tags': posts_meta[f].get('tags', '')
     } for f in post_files]
@@ -113,7 +125,7 @@ def get_tags_with_posts():
                 tags[meta_tag]['posts'] = []
                 tags[meta_tag]['friendly'] = url_friendly(meta_tag)
             tags[meta_tag]['posts'].append({
-                'date': get_date_from_path(file_path).strftime('%d %b %Y'), 
+                'date': format_date_html(get_date_from_path(file_path)), 
                 'url':  get_url_from_path(file_path),
                 'title': meta['title']
             })
@@ -257,7 +269,7 @@ def build(quiet=False):
 
         # Posts only
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
-            context_dict['date'] = get_date_from_path(template_path).strftime('%d %b %Y')
+            context_dict['date'] = format_date_html(get_date_from_path(template_path))
             # Find prev and next posts
             tmpl_post_idx = [x['url'] for x in site_posts].index(url)
             if tmpl_post_idx < len(site_posts) - 1:
