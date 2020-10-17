@@ -84,6 +84,8 @@ def format_date_html(date_obj):
         suffix = 'rd'
     else:
         suffix = 'th'
+    if d[0] == '0':
+        d = d[1:]
     return '{}<sup>{}</sup> {}'.format(d, suffix, date_obj.strftime('%B %Y'))
 
 def get_post_files():
