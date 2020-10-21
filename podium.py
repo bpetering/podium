@@ -23,6 +23,10 @@ STATIC_DIR='static'
 BUILD_DIR='build'
 BUILD_TAGS_DIR='tags'
 
+ALL_POSTS_BY_TAG_TEMPLATE='postsbytag.jinja'
+SPECIFIC_TAG_TEMPLATE='tag.jinja'
+SITEMAP_TEMPLATE='sitemap.xml.jinja'
+
 IGNORE_FILENAMES=('tags', 'tags.temp', 'tags.lock')
 IGNORE_EXTS=('.swp', '.swx')
 
@@ -203,7 +207,7 @@ def template_render_and_rename(template_path, context_dict, quiet=False):
 
 def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
     # Individual tags pages
-    tag_template_path = os.path.join('templates', 'tag.jinja')
+    tag_template_path = os.path.join(TEMPLATES_DIR, SPECIFIC_TAG_TEMPLATE)
     tags_dir = os.path.join(BUILD_DIR, BUILD_TAGS_DIR)
     os.mkdir(tags_dir)
 
@@ -222,7 +226,7 @@ def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
         template_render_and_rename(specific_tag_template_path, context_dict, quiet=quiet)
 
     # All posts by tag
-    all_posts_template_path = os.path.join('templates', 'postsbytag.jinja')
+    all_posts_template_path = os.path.join(TEMPLATES_DIR, ALL_POSTS_BY_TAG_TEMPLATE)
     build_all_posts_template_path = os.path.join(BUILD_DIR, 'postsbytag.html.jinja')
     shutil.copy2(all_posts_template_path, build_all_posts_template_path)
     del context_dict['tag']
