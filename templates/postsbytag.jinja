@@ -3,16 +3,15 @@
 
 {% block bodyclass %}posts-by-tag{% endblock %}
 
-{% block content %}
 
-<h1>Posts by Tag</h1>
+{% block content %}
 
 {% for tag in site.tags|sort(attribute="name") %}
     <h2>{{ site.tags[tag].name|title }}</h2>
 
     {% for post in site.tags[tag].posts|sort(attribute="date") %}
         <article class="post-article">
-            <p class="post-date">{{ post.date }}</p>
+            <p class="post-date">{{ post.pub_date }}</p>
             <p class="post-link">
                 <a href="{{ post.url }}">{{ post.title }}</a>
             </p>

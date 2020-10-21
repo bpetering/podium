@@ -8,13 +8,11 @@
 
 {% block content %}
 
-<h1>Posts tagged &ldquo;{{ tag }}&rdquo;</h1>
-
 <h2>{{ tag }}</h2>
 
 {% for post in site.tags[tag].posts|sort(attribute="date") %}
     <article class="post">
-        <p class="post-date">{{ post.date }}</p>
+        <p class="post-date">{{ post.pub_date }}</p>
         <p class="post-link">
             <a href="{{ post.url }}">{{ post.title }}</a>
         </p>

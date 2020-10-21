@@ -110,7 +110,8 @@ def get_posts(reverse_order=True):
         'path': f, 
         'meta': posts_meta[f],
         'url':  get_url_from_path(f),
-        'date': format_date_html(get_date_from_path(f)),
+        'pub_date': format_date_html(get_date_from_path(f)),
+        'last_mod_date': posts_meta[f].get('last modified', ''),
         'title': posts_meta[f].get('title', ''),
         'tags': posts_meta[f].get('tags', '')
     } for f in post_files]
@@ -131,7 +132,8 @@ def get_tags_with_posts():
                 tags[meta_tag]['posts'] = []
                 tags[meta_tag]['friendly'] = url_friendly(meta_tag)
             tags[meta_tag]['posts'].append({
-                'date': format_date_html(get_date_from_path(file_path)), 
+                'pub_date': format_date_html(get_date_from_path(file_path)), 
+                'last_mod_date': meta.get('last modified', ''),
                 'url':  get_url_from_path(file_path),
                 'title': meta['title']
             })
@@ -275,7 +277,7 @@ def build(quiet=False):
 
         # Posts only
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
-            context_dict['date'] = format_date_html(get_date_from_path(template_path))
+            context_dict['pub_date'] = format_date_html(get_date_from_path(template_path))
             # Find prev and next posts
             tmpl_post_idx = [x['url'] for x in site_posts].index(url)
             if tmpl_post_idx < len(site_posts) - 1:
@@ -298,8 +300,12 @@ def build(quiet=False):
 
     build_tag_pages(site_posts, site_tags_with_posts, quiet=quiet)
     build_compressed(('zip', 'gztar'))
+    build_sitemap()
 
     os.chdir(old_cwd)
+
+def build_sitemap(quiet=False):
+    
 
 def watch():
     global BASE, BUILD_DIR
