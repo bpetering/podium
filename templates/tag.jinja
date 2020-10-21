@@ -10,9 +10,9 @@
 
 <h2>{{ tag }}</h2>
 
-{% for post in site.tags[tag].posts|sort(attribute="date") %}
+{% for post in site.tags[tag].posts|sort(attribute="pub_date") %}
     <article class="post">
-        <p class="post-date">{{ post.pub_date }}</p>
+        <p class="post-date">{{ post.pub_date|format_date_html }}</p>
         <p class="post-link">
             <a href="{{ post.url }}">{{ post.title }}</a>
         </p>

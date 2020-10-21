@@ -4,8 +4,8 @@
     {% for sitemap_url in sitemap_urls %}
         <url>
             <loc>{{ sitemap_url.loc }}</loc>
-            {% if sitemap_url.last_mod is defined %}
-            <lastmod>{{ sitemap_url.last_mod }}</loc>
+            {% if sitemap_url.last_mod %}
+            <lastmod>{{ sitemap_url.last_mod }}</lastmod>
             {% endif %}
         </url>
     {% endfor %}
