@@ -67,6 +67,10 @@ def read_meta(meta_path):
 
 # Filter to format dates for display, only use in templates
 def format_date_html(date_obj):
+    if not date_obj:
+        return ''
+    if type(date_obj) is str:
+        return date_obj
     assert type(date_obj) is date
     d = date_obj.strftime('%d')
     if d[-1] == '1':
@@ -343,7 +347,7 @@ def build(quiet=False):
 
     build_tag_pages(site_posts, site_tags_with_posts, quiet=quiet)
     build_compressed(('zip', 'gztar'))
-    build_sitemap()
+    build_sitemap(quiet=quiet)
 
     os.chdir(old_cwd)
 
