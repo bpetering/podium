@@ -60,25 +60,14 @@ def read_meta(meta_path):
             val = re.sub(r'^\s+', '', val)
             val = re.sub(r'\s+$', '', val)
             if key == 'tags':
-                ret[key] = [x.lower().strip() for x in val.split(',') if x != ',']
+                ret[key] = [x.strip() for x in val.split(',') if x != ',']
             else:
                 ret[key] = val
     return ret
 
-def url_friendly(s):
-    return re.sub(r'\W', '', s)
-
-def get_url_from_path(path):
-    global BASE
-    tmp = path.replace(BASE, '').replace('build' + os.sep, '').replace('.jinja', '')
-    if not tmp.startswith('/'):
-        tmp = '/' + tmp
-    return tmp
-
-def get_date_from_path(post_path):
-    return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
-
+# Filter to format dates for display, only use in templates
 def format_date_html(date_obj):
+    assert type(date_obj) is date
     d = date_obj.strftime('%d')
     if d[-1] == '1':
         suffix = 'st'
@@ -92,8 +81,22 @@ def format_date_html(date_obj):
         d = d[1:]
     return '{}<sup>{}</sup> {}'.format(d, suffix, date_obj.strftime('%B %Y'))
 
+def url_friendly(s):
+    return re.sub(r'\W', '', s)
+
+def get_url_from_path(path):
+    tmp = path.replace(BASE, '')\
+              .replace(BUILD_DIR + os.sep, '')\
+              .replace(PAGES_DIR + os.sep, '')\
+              .replace('.jinja', '')
+    if not tmp.startswith('/'):
+        tmp = '/' + tmp
+    return tmp
+
+def get_date_from_path(post_path):
+    return date.fromisoformat(re.findall(r'\d{4}/\d{2}/\d{2}', post_path)[0].replace('/', '-'))
+
 def get_post_files():
-    global BASE, POSTS_DIR
     post_files = [f for f in glob.glob(os.path.join(BASE, POSTS_DIR, '**'), recursive=True) 
                     if f.endswith('.jinja')]
     return post_files
@@ -110,7 +113,7 @@ def get_posts(reverse_order=True):
         'path': f, 
         'meta': posts_meta[f],
         'url':  get_url_from_path(f),
-        'pub_date': format_date_html(get_date_from_path(f)),
+        'pub_date': get_date_from_path(f),
         'last_mod_date': posts_meta[f].get('last modified', ''),
         'title': posts_meta[f].get('title', ''),
         'tags': posts_meta[f].get('tags', '')
@@ -132,12 +135,33 @@ def get_tags_with_posts():
                 tags[meta_tag]['posts'] = []
                 tags[meta_tag]['friendly'] = url_friendly(meta_tag)
             tags[meta_tag]['posts'].append({
-                'pub_date': format_date_html(get_date_from_path(file_path)), 
+                'pub_date': get_date_from_path(file_path), 
                 'last_mod_date': meta.get('last modified', ''),
                 'url':  get_url_from_path(file_path),
                 'title': meta['title']
             })
     return tags
+
+def get_page_files():
+    page_files = [f for f in glob.glob(os.path.join(BASE, PAGES_DIR, '**'), recursive=True) 
+                    if f.endswith('.jinja')]
+    return page_files
+
+def get_pages():
+    pages_meta = {}
+    page_files = get_page_files()
+    for f in page_files:
+        pages_meta[f] = read_meta(f + '.meta')
+    pages = [{
+        'path': f, 
+        'meta': pages_meta[f],
+        'url':  get_url_from_path(f),
+        'pub_date': pages_meta[f].get('published', ''),
+        'last_mod_date': pages_meta[f].get('last modified', ''),
+        'title': pages_meta[f].get('title', ''),
+        'tags': pages_meta[f].get('tags', '')
+    } for f in page_files]
+    return pages
 
 def copy_entries(src_dir, dst_dir, quiet=False):
     """Copy files, and copy directories recursively, from src_dir to dst_dir"""
@@ -190,6 +214,7 @@ def template_render_and_rename(template_path, context_dict, quiet=False):
     jinja_env = Environment(
             loader=FileSystemLoader([BASE, os.path.join(BASE, TEMPLATES_DIR)])
     )
+    jinja_env.filters['format_date_html'] = format_date_html
     template = jinja_env.get_template(template_path)
 
     # Ensure certain things are always in context dict
@@ -234,6 +259,24 @@ def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
     del context_dict['tag']
     context_dict['title'] = 'Posts by Tag'
     template_render_and_rename(build_all_posts_template_path, context_dict, quiet=quiet)
+
+def build_sitemap(quiet=False):
+    base_url = SITE_META['url']
+    if base_url.endswith('/'):
+        base_url = base_url[:-1]
+
+    shutil.copy2(os.path.join(BASE, TEMPLATES_DIR, SITEMAP_TEMPLATE), os.path.join(BASE, BUILD_DIR))
+    
+    sitemap_urls = [{
+        'loc': base_url + x['url'], 
+        'last_mod': x['last_mod_date'] if x['last_mod_date'] else x['pub_date']
+    } for x in get_pages() + get_posts()]
+
+    template_render_and_rename(
+        os.path.join(BUILD_DIR, SITEMAP_TEMPLATE), 
+        {'sitemap_urls': sitemap_urls}, 
+        quiet=quiet
+    )
 
 def build(quiet=False):
     clean(quiet=quiet)
@@ -304,9 +347,6 @@ def build(quiet=False):
 
     os.chdir(old_cwd)
 
-def build_sitemap(quiet=False):
-    
-
 def watch():
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
@@ -349,7 +389,6 @@ def watch():
                     break
 
 def clean(quiet=False):
-    global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
     shutil.rmtree(build_dir, ignore_errors=True)
     if not quiet:
