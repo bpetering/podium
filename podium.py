@@ -14,6 +14,8 @@ from jinja2 import Environment, FileSystemLoader
 
 # TODO live reload browser with xdotool
 
+SERVER_PORT=8989
+
 BASE=os.path.expanduser('~/podium')
 
 PAGES_DIR='pages'
@@ -366,11 +368,11 @@ def watch():
         if ret == 0:
             # Child
             os.chdir(build_dir)
-            httpd = HTTPServer(('127.0.0.1', 8000), SimpleHTTPRequestHandler)
+            httpd = HTTPServer(('127.0.0.1', SERVER_PORT), SimpleHTTPRequestHandler)
             httpd.serve_forever()
         else:
             # Parent
-            print("+ Serving on http://127.0.0.1:8000/, Ctrl-C to stop\n")
+            print("+ Serving on http://127.0.0.1:{}/, Ctrl-C to stop\n".format(SERVER_PORT))
             i = inotify.adapters.InotifyTree(BASE)
             for event in i.event_gen():
                 # We're only interested in create, delete, move, write events (not dir list)
