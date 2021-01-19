@@ -183,7 +183,8 @@ def copy_entries(src_dir, dst_dir, quiet=False):
             continue
         full = os.path.join(src_dir, f)
         if os.path.isfile(full):
-            shutil.copy(full, os.path.join(dst_dir, f))
+            dest = os.path.join(dst_dir, f)
+            shutil.copyfile(full, os.path.join(dst_dir, f))
             num_files += 1
         elif os.path.isdir(full):
             shutil.copytree(full, os.path.join(dst_dir, f))
@@ -285,7 +286,10 @@ def build_sitemap(quiet=False):
     )
 
 def build(quiet=False):
+    global BASE, BUILD_DIR
     clean(quiet=quiet)
+    # Ensure build dir exists
+    os.mkdir(os.path.join(BASE, BUILD_DIR))
 
     # Implications for URL structure:
     # - posts are by-date (3 directory levels) under /posts/<date>/name.html
@@ -300,7 +304,6 @@ def build(quiet=False):
     if not quiet:
         print("+ Copying posts...")
     copy_entries(os.path.join(BASE, POSTS_DIR), os.path.join(BASE, BUILD_DIR, 'posts'), quiet=quiet)
-
     # copy pages/* (files and dirs) to build/
     if not quiet:
         print("+ Copying pages...")
@@ -323,10 +326,11 @@ def build(quiet=False):
             'name': x,
             'friendly': url_friendly(x)
         } for x in context_dict.get('tags', [])]
-
+        
         # Posts only
         if template_path.startswith(os.path.join(BUILD_DIR, 'posts', '')):
             context_dict['pub_date'] = format_date_html(get_date_from_path(template_path))
+            
             # Find prev and next posts
             tmpl_post_idx = [x['url'] for x in site_posts].index(url)
             if tmpl_post_idx < len(site_posts) - 1:
@@ -346,7 +350,6 @@ def build(quiet=False):
         context_dict['site']['tags'] = site_tags_with_posts
 
         template_render_and_rename(template_path, context_dict, quiet=quiet)
-
     build_tag_pages(site_posts, site_tags_with_posts, quiet=quiet)
     build_compressed(('zip', 'gztar'))
     build_sitemap(quiet=quiet)
@@ -357,6 +360,8 @@ def watch():
     global BASE, BUILD_DIR
     build_dir = os.path.join(BASE, BUILD_DIR)
     
+    # Ensure build dir exists
+    if not os.path.isdir(build_dir): os.path.mkdir(build_dir)
     while True:
         build(quiet=True)
         print("+ rebuilt")
