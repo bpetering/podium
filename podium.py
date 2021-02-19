@@ -26,6 +26,7 @@ BUILD_DIR='build'
 BUILD_TAGS_DIR='tags'
 
 ALL_POSTS_BY_TAG_TEMPLATE='postsbytag.jinja'
+ALL_POSTS_BY_DATE_TEMPLATE='postsbydate.jinja'
 SPECIFIC_TAG_TEMPLATE='tag.jinja'
 SITEMAP_TEMPLATE='sitemap.xml.jinja'
 
@@ -261,10 +262,17 @@ def build_tag_pages(site_posts, site_tags_with_posts, quiet=False):
 
     # All posts by tag
     all_posts_template_path = os.path.join(TEMPLATES_DIR, ALL_POSTS_BY_TAG_TEMPLATE)
-    build_all_posts_template_path = os.path.join(BUILD_DIR, 'postsbytag.html.jinja')
+    build_all_posts_template_path = os.path.join(BUILD_DIR, 'postsbytag.html.jinja')        # TODO dynamic
     shutil.copy2(all_posts_template_path, build_all_posts_template_path)
     del context_dict['tag']
     context_dict['title'] = 'Posts by Tag'
+    template_render_and_rename(build_all_posts_template_path, context_dict, quiet=quiet)
+
+    # All posts by date
+    all_posts_template_path = os.path.join(TEMPLATES_DIR, ALL_POSTS_BY_DATE_TEMPLATE)
+    build_all_posts_template_path = os.path.join(BUILD_DIR, 'postsbydate.html.jinja')       # TODO dynamic
+    shutil.copy2(all_posts_template_path, build_all_posts_template_path)
+    context_dict['title'] = 'Posts by Date'
     template_render_and_rename(build_all_posts_template_path, context_dict, quiet=quiet)
 
 def build_sitemap(quiet=False):
